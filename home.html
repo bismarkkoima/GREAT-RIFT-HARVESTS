@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Great Rift Harvests</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="home.css">
+</head>
+<body>
+
+<header>
+    <h1>Great Rift Harvests</h1>
+    <nav>
+        <ul>
+            <li><a href="home.html">Home</a></li>
+            <li><a href="shop.html">Shop</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+        </ul>
+    </nav>
+</header>
+
+<section class="hero">
+    <h2>Grown in the heart of Kenya🌱</h2>
+    <p>Delivering the beauty of the Great Rift Valley straight to your doorstep.</p>
+    <button>Shop Now</button>
+</section>
+
+<section class="featured-products">
+    <h2>Featured Products</h2>
+
+    <!-- Product 1 -->
+    <div class="product">
+        <img src="images/classicrose.webp" alt="Flower Arrangement 2">
+        <h3>Classic Rose</h3>
+        <p>Ksh. 2000</p>
+
+        <!-- Quantity Selection -->
+        <div class="quantity-selection">
+            <label for="small-quantity">Small Quantity (10 stems)</label>
+            <select id="small-quantity-2" name="small-quantity">
+                <option value="1">1 Bundle</option>
+                <option value="2">2 Bundles</option>
+                <option value="3">3 Bundles</option>
+            </select>
+            <p class="price">Ksh. 2000 per bundle</p>
+
+            <label for="large-quantity">Large Quantity (100 stems)</label>
+            <select id="large-quantity-2" name="large-quantity">
+                <option value="1">1 Box</option>
+                <option value="2">2 Boxes</option>
+                <option value="3">3 Boxes</option>
+            </select>
+            <p class="price">Ksh. 18000 per box</p>
+        </div>
+
+        <!-- Add to Cart Button with Specific Quantity -->
+        <button class="add-to-cart" onclick="addToCart('Classic Rose', 2000, 'small', document.getElementById('small-quantity-2').value)">Add to Cart</button>
+        <button class="add-to-cart" onclick="addToCart('Classic Rose', 18000, 'large', document.getElementById('large-quantity-2').value)">Add to Cart (Large)</button>
+    </div>
+    
+    <div class="product">
+        <img src="images/elegantbouquet.webp" alt="Flower Arrangement 1">
+        <h3>Elegant Bouquet</h3>
+        <p>Ksh. 1500</p>
+
+        <!-- Quantity Selection -->
+        <div class="quantity-selection">
+            <label for="small-quantity">Small Quantity (10 stems)</label>
+            <select id="small-quantity-1" name="small-quantity">
+                <option value="1">1 Bundle</option>
+                <option value="2">2 Bundles</option>
+                <option value="3">3 Bundles</option>
+            </select>
+            <p class="price">Ksh. 1500 per bundle</p>
+
+            <label for="large-quantity">Large Quantity (100 stems)</label>
+            <select id="large-quantity-1" name="large-quantity">
+                <option value="1">1 Box</option>
+                <option value="2">2 Boxes</option>
+                <option value="3">3 Boxes</option>
+            </select>
+            <p class="price">Ksh. 13000 per box</p>
+        </div>
+
+        <!-- Add to Cart Button with Specific Quantity -->
+        <button class="add-to-cart" onclick="addToCart('Elegant Bouquet', 1500, 'small', document.getElementById('small-quantity-1').value)">Add to Cart</button>
+        <button class="add-to-cart" onclick="addToCart('Elegant Bouquet', 13000, 'large', document.getElementById('large-quantity-1').value)">Add to Cart (Large)</button>
+    </div>
+
+    <!-- Product 2 -->
+    
+    <div class="product">
+        <<img src="images/sunshinebouqet.jpeg" alt="Flower Arrangement 2">
+        <h3>Sunshine Bouquet</h3>
+        <p>Ksh. 1200</p>
+      
+        <!-- Quantity Selection -->
+        <div class="quantity-selection">
+            <label for="small-quantity">Small Quantity (10 stems)</label>
+            <select id="small-quantity-1" name="small-quantity">
+                <option value="1">1 Bundle</option>
+                <option value="2">2 Bundles</option>
+                <option value="3">3 Bundles</option>
+            </select>
+            <p class="price">Ksh. 1200 per bundle</p>
+      
+            <label for="large-quantity">Large Quantity (100 stems)</label>
+            <select id="large-quantity-1" name="large-quantity">
+                <option value="1">1 Box</option>
+                <option value="2">2 Boxes</option>
+                <option value="3">3 Boxes</option>
+            </select>
+            <p class="price">Ksh. 8000 per box</p>
+        </div>
+      
+        <!-- Add to Cart Button with Specific Quantity -->
+        <button class="add-to-cart" onclick="addToCart('Sunshine Bouquet', 1200, 'small', document.getElementById('small-quantity-1').value)">Add to Cart</button>
+        <button class="add-to-cart" onclick="addToCart('Sunshine Bouquet', 8000, 'large', document.getElementById('large-quantity-1').value)">Add to Cart (Large)</button>
+      </div>
+      <div class="product">
+        <<img src="images/wildflowers.jfif" alt="Flower Arrangement 4">
+        <h3>Wild Flowers</h3>
+        <p>Ksh. 1000</p>
+      
+        <!-- Quantity Selection -->
+        <div class="quantity-selection">
+            <label for="small-quantity">Small Quantity (10 stems)</label>
+            <select id="small-quantity-1" name="small-quantity">
+                <option value="1">1 Bundle</option>
+                <option value="2">2 Bundles</option>
+                <option value="3">3 Bundles</option>
+            </select>
+            <p class="price">Ksh. 1000 per bundle</p>
+      
+            <label for="large-quantity">Large Quantity (100 stems)</label>
+            <select id="large-quantity-1" name="large-quantity">
+                <option value="1">1 Box</option>
+                <option value="2">2 Boxes</option>
+                <option value="3">3 Boxes</option>
+            </select>
+            <p class="price">Ksh. 11000 per box</p>
+        </div>
+      
+        <!-- Add to Cart Button with Specific Quantity -->
+        <button class="add-to-cart" onclick="addToCart('Wild Flowers', 1000, 'small', document.getElementById('small-quantity-1').value)">Add to Cart</button>
+        <button class="add-to-cart" onclick="addToCart('Wild Flowers', 11000, 'large', document.getElementById('large-quantity-1').value)">Add to Cart (Large)</button>
+      </div>
+            
+    <!-- Add more products as needed -->
+</section>
+
+<footer>
+    <p>&copy; 2025 Great Rift Harvests | All Rights Reserved</p>
+</footer>
+
+<script src="cart.js"></script> <!-- Link to your cart functionality script -->
+</body>
+</html>

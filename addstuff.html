@@ -1,0 +1,29 @@
+<div class="product">
+  <<img src="images/wildflowers.jfif" alt="Flower Arrangement 4">
+  <h3>Wild Flowers</h3>
+  <p>Ksh. 1000</p>
+
+  <!-- Quantity Selection -->
+  <div class="quantity-selection">
+      <label for="small-quantity">Small Quantity (10 stems)</label>
+      <select id="small-quantity-1" name="small-quantity">
+          <option value="1">1 Bundle</option>
+          <option value="2">2 Bundles</option>
+          <option value="3">3 Bundles</option>
+      </select>
+      <p class="price">Ksh. 1000 per bundle</p>
+
+      <label for="large-quantity">Large Quantity (100 stems)</label>
+      <select id="large-quantity-1" name="large-quantity">
+          <option value="1">1 Box</option>
+          <option value="2">2 Boxes</option>
+          <option value="3">3 Boxes</option>
+      </select>
+      <p class="price">Ksh. 11000 per box</p>
+  </div>
+
+  <!-- Add to Cart Button with Specific Quantity -->
+  <button class="add-to-cart" onclick="addToCart('Wild Flowers', 1000, 'small', document.getElementById('small-quantity-1').value)">Add to Cart</button>
+  <button class="add-to-cart" onclick="addToCart('Wild Flowers', 11000, 'large', document.getElementById('large-quantity-1').value)">Add to Cart (Large)</button>
+</div>
+
