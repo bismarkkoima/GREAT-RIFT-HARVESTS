@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useCart } from "@/components/cart/cart-provider";
 import { CartIcon, CloseIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon } from "@/components/ui/icons";
 import { NAV } from "./nav";
@@ -87,7 +88,8 @@ export function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
       <button className="rounded-full p-2 md:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
         <MenuIcon />
       </button>
-      {open && (
+      {/* Portal to <body>: the header's backdrop-blur would otherwise become the containing block for this fixed overlay. */}
+      {open && createPortal(
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <nav className="absolute left-0 top-0 flex h-full w-72 flex-col gap-1 bg-white p-6 shadow-xl dark:bg-stone-900">
@@ -100,7 +102,8 @@ export function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
               </Link>
             ))}
           </nav>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
