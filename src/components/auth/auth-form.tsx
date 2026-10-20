@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
 import { login, register } from "@/app/actions/auth";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export function AuthForm({ mode, next }: { mode: "login" | "register"; next?: string }) {
-  const [state, action, pending] = useActionState(mode === "login" ? login : register, null);
+  const [state, action, pending] = useFormAction(mode === "login" ? login : register);
   const nextQuery = next ? `?next=${encodeURIComponent(next)}` : "";
   return (
-    <form action={action} className="card space-y-4 p-6 sm:p-8">
+    <form onSubmit={action} className="card space-y-4 p-6 sm:p-8">
       {next && <input type="hidden" name="next" value={next} />}
       {mode === "register" && (
         <>
@@ -27,7 +27,12 @@ export function AuthForm({ mode, next }: { mode: "login" | "register"; next?: st
         <input id="email" name="email" type="email" required className="input" autoComplete="email" />
       </div>
       <div>
-        <label className="label" htmlFor="password">Password</label>
+        <div className="flex items-center justify-between">
+          <label className="label" htmlFor="password">Password</label>
+          {mode === "login" && (
+            <Link href="/forgot-password" className="mb-1.5 text-xs font-medium text-brand-700 hover:underline dark:text-brand-400">Forgot password?</Link>
+          )}
+        </div>
         <input id="password" name="password" type="password" required minLength={mode === "register" ? 8 : undefined} className="input" autoComplete={mode === "login" ? "current-password" : "new-password"} />
       </div>
       {state?.error && <p className="text-sm text-blush-600">{state.error}</p>}

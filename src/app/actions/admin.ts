@@ -5,9 +5,11 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { notifyOrderStatus } from "@/lib/order-notifications";
 import { ORDER_STATUSES, slugify } from "@/lib/format";
 import type { ActionState } from "./types";
 
@@ -151,6 +153,7 @@ export async function updateOrder(id: string, form: FormData) {
     }
     await tx.order.update({ where: { id }, data: { status, paymentStatus } });
   });
+  if (status !== order.status) after(() => notifyOrderStatus(id));
   revalidatePath("/admin", "layout");
 }
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
 import { sendContactMessage } from "@/app/actions/public";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
-  const [state, action, pending] = useActionState(sendContactMessage, null);
+  const [state, action, pending] = useFormAction(sendContactMessage);
   if (state?.ok) {
     return (
       <div className="card flex flex-col items-center justify-center p-12 text-center">
@@ -14,7 +14,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
     );
   }
   return (
-    <form action={action} className="card space-y-4 p-6 sm:p-8">
+    <form onSubmit={action} className="card space-y-4 p-6 sm:p-8">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="name">Name</label>

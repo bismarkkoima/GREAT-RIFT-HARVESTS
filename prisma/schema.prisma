@@ -22,6 +22,18 @@ model User {
   orders       Order[]
   reviews      Review[]
   wishlist     WishlistItem[]
+  resetTokens  PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  // SHA-256 of the token sent by email; the raw token is never stored.
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model Category {

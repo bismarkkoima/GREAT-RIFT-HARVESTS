@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useCart } from "@/components/cart/cart-provider";
 import { checkCoupon, placeOrder } from "@/app/actions/checkout";
 import { formatKsh } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/pricing";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 type Props = {
   user: { name: string; email: string; phone: string } | null;
@@ -21,7 +22,7 @@ function today() {
 
 export function CheckoutForm({ user, cities, simulated }: Props) {
   const { items, subtotal, ready } = useCart();
-  const [state, action, pending] = useActionState(placeOrder, null);
+  const [state, action, pending] = useFormAction(placeOrder);
   const [city, setCity] = useState(cities[0]);
   const [payment, setPayment] = useState<"MPESA" | "CASH">("MPESA");
   const [couponInput, setCouponInput] = useState("");
@@ -57,7 +58,7 @@ export function CheckoutForm({ user, cities, simulated }: Props) {
     });
 
   return (
-    <form action={action} className="grid gap-8 lg:grid-cols-3">
+    <form onSubmit={action} className="grid gap-8 lg:grid-cols-3">
       <input type="hidden" name="items" value={JSON.stringify(items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })))} />
       <input type="hidden" name="coupon" value={coupon?.code ?? ""} />
 

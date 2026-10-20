@@ -1,9 +1,12 @@
 "use server";
 
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { adminRecipients, sendEmail } from "@/lib/notify";
+import { adminContactEmail } from "@/lib/emails";
 import type { ActionState } from "./types";
 
 async function clientKey(prefix: string) {
@@ -32,5 +35,9 @@ export async function sendContactMessage(_: ActionState, form: FormData): Promis
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   if (!rateLimit(await clientKey("contact"), 3)) return { error: "Too many messages, please try again in a minute." };
   await db.contactMessage.create({ data: { ...parsed.data, phone: parsed.data.phone || null } });
+  after(async () => {
+    const msg = adminContactEmail(parsed.data);
+    await Promise.all((await adminRecipients()).map((to) => sendEmail({ to, ...msg })));
+  });
   return { ok: true, message: "Thanks for reaching out! We'll get back to you within one business day." };
 }

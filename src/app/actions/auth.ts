@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -7,6 +8,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, destroySession, getCurrentUser, hashPassword, verifyPassword } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendEmail } from "@/lib/notify";
+import { passwordResetEmail } from "@/lib/emails";
+import { RESET_TTL_MS, findValidResetToken, hashResetToken } from "@/lib/password-reset";
 import type { ActionState } from "./types";
 
 function safeNext(value: FormDataEntryValue | null) {
@@ -81,4 +85,43 @@ export async function updateProfile(_: ActionState, form: FormData): Promise<Act
   await db.user.update({ where: { id: user.id }, data });
   revalidatePath("/account");
   return { ok: true, message: newPassword ? "Profile and password updated." : "Profile updated." };
+}
+
+export async function requestPasswordReset(_: ActionState, form: FormData): Promise<ActionState> {
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0] ?? "local";
+  if (!rateLimit(`reset:${ip}`, 5)) return { error: "Too many attempts. Please wait a minute." };
+  // Same reply whether or not the account exists, so emails can't be probed.
+  const done = { ok: true, message: "If an account exists for that email, we've sent a reset link. Check your inbox." };
+  if (!z.string().email().safeParse(email).success) return done;
+
+  const user = await db.user.findUnique({ where: { email } });
+  if (!user) return done;
+
+  const token = randomBytes(32).toString("base64url");
+  await db.$transaction([
+    db.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } }),
+    db.passwordResetToken.create({ data: { userId: user.id, tokenHash: hashResetToken(token), expiresAt: new Date(Date.now() + RESET_TTL_MS) } }),
+  ]);
+  const site = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  await sendEmail({ to: user.email, ...passwordResetEmail(user.name, `${site}/reset-password?token=${token}`) });
+  return done;
+}
+
+export async function resetPassword(_: ActionState, form: FormData): Promise<ActionState> {
+  const token = String(form.get("token") ?? "");
+  const password = String(form.get("password") ?? "");
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password !== String(form.get("confirm") ?? "")) return { error: "The passwords don't match." };
+
+  const record = await findValidResetToken(token);
+  if (!record) return { error: "This reset link is invalid or has expired. Please request a new one." };
+
+  await db.$transaction([
+    db.user.update({ where: { id: record.userId }, data: { passwordHash: await hashPassword(password) } }),
+    db.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    db.passwordResetToken.deleteMany({ where: { userId: record.userId, usedAt: null } }),
+  ]);
+  await createSession(record.userId);
+  redirect("/account");
 }

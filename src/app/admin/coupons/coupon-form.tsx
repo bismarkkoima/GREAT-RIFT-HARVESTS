@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
 import { createCoupon } from "@/app/actions/admin";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export function CouponForm() {
-  const [state, action, pending] = useActionState(createCoupon, null);
+  const [state, action, pending] = useFormAction(createCoupon, { resetOnSuccess: true });
   return (
-    <form action={action} className="card space-y-4 p-6">
+    <form onSubmit={action} className="card space-y-4 p-6">
       <div><label className="label" htmlFor="code">Code</label><input id="code" name="code" required className="input uppercase" placeholder="VALENTINE20" /></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label" htmlFor="percentOff">% off</label><input id="percentOff" name="percentOff" type="number" min={0} max={100} defaultValue={0} className="input" /></div>

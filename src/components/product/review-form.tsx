@@ -1,15 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { submitReview } from "@/app/actions/shop";
 import { StarIcon } from "@/components/ui/icons";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export function ReviewForm({ productId }: { productId: string }) {
-  const [state, action, pending] = useActionState(submitReview, null);
+  const [state, action, pending] = useFormAction(submitReview);
   const [rating, setRating] = useState(5);
   if (state?.ok) return <p className="card p-4 text-brand-700 dark:text-brand-300">{state.message}</p>;
   return (
-    <form action={action} className="card space-y-4 p-6">
+    <form onSubmit={action} className="card space-y-4 p-6">
       <h3 className="text-lg">Write a review</h3>
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="rating" value={rating} />

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { saveProduct } from "@/app/actions/admin";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 type Variant = { id?: string; label: string; stems: number; price: number; stock: number };
 type Product = {
@@ -19,7 +20,7 @@ type Product = {
 };
 
 export function ProductForm({ product, categories }: { product?: Product; categories: { id: string; name: string }[] }) {
-  const [state, action, pending] = useActionState(saveProduct, null);
+  const [state, action, pending] = useFormAction(saveProduct);
   const [variants, setVariants] = useState<Variant[]>(
     product?.variants ?? [
       { label: "Bundle (10 stems)", stems: 10, price: 1500, stock: 100 },
@@ -30,7 +31,7 @@ export function ProductForm({ product, categories }: { product?: Product; catego
   const update = (i: number, patch: Partial<Variant>) => setVariants((v) => v.map((x, j) => (j === i ? { ...x, ...patch } : x)));
 
   return (
-    <form action={action} className="space-y-6">
+    <form onSubmit={action} className="space-y-6">
       {product && <input type="hidden" name="id" value={product.id} />}
       <input type="hidden" name="variants" value={JSON.stringify(variants)} />
 

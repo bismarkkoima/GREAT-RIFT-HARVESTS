@@ -15,7 +15,8 @@ Built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS** and **P
 - **M-Pesa STK Push** payments (Safaricom Daraja) or cash on delivery
 - Order confirmation page with live payment status and a delivery progress tracker
 - Order tracking by order number + email
-- Customer accounts: order history, wishlist, profile and password change
+- Customer accounts: order history, wishlist, profile, password change and forgot-password reset by email
+- **Email and SMS notifications**: order confirmation, out-for-delivery, delivered and cancelled updates for customers; new-order and contact-form alerts for the shop team
 - Contact form, newsletter sign-up, WhatsApp chat button
 - Dark mode, fully responsive, SEO metadata, sitemap, robots.txt and product structured data
 
@@ -51,6 +52,22 @@ Try the discount code `KARIBU10` for 10% off.
 With no Daraja keys set, checkout runs in **demo mode** and M-Pesa payments are marked as paid automatically.
 To take real payments, create an app at <https://developer.safaricom.co.ke>, then fill in the `MPESA_*` variables in `.env`.
 `NEXT_PUBLIC_SITE_URL` must be a public HTTPS URL so Safaricom can reach `/api/mpesa/callback`.
+
+## Email and SMS
+
+With no keys set, emails and SMS are printed to the server log so you can see exactly what would be sent.
+
+- **Email:** set the `SMTP_*` variables for any SMTP provider (Gmail app password, Zoho, Brevo, Resend…) and `EMAIL_FROM`.
+- **SMS:** create an [Africa's Talking](https://africastalking.com) account and set `AT_USERNAME` / `AT_API_KEY` (use `AT_USERNAME="sandbox"` to test). `AT_SENDER_ID` is optional.
+- **Shop alerts** go to `ADMIN_NOTIFY_EMAIL` (comma separated) or, if unset, to every admin account.
+
+| Event | Customer | Shop team |
+| --- | --- | --- |
+| Order confirmed (cash, or once M-Pesa payment lands) | Email + SMS | Email |
+| Status set to Processing / Delivered / Cancelled | Email | — |
+| Status set to Out for delivery | Email + SMS | — |
+| Contact form message | — | Email |
+| Forgot password | Email with a 1-hour reset link | — |
 
 ## Scripts
 

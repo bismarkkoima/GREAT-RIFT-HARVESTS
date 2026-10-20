@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
 import { updateProfile } from "@/app/actions/auth";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export function ProfileForm({ user }: { user: { name: string; email: string; phone: string } }) {
-  const [state, action, pending] = useActionState(updateProfile, null);
+  const [state, action, pending] = useFormAction(updateProfile);
   return (
-    <form action={action} className="card space-y-4 p-6">
+    <form onSubmit={action} className="card space-y-4 p-6">
       <div>
         <label className="label" htmlFor="email">Email</label>
         <input id="email" value={user.email} disabled className="input opacity-70" />

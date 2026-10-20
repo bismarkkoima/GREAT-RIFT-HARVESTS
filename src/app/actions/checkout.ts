@@ -2,12 +2,14 @@
 
 import { randomBytes } from "crypto";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { couponDiscount, deliveryFeeFor } from "@/lib/pricing";
 import { mpesaConfigured, normalizePhone, stkPush } from "@/lib/mpesa";
+import { notifyOrderConfirmed } from "@/lib/order-notifications";
 import { rateLimit } from "@/lib/rate-limit";
 import type { ActionState } from "./types";
 
@@ -135,6 +137,9 @@ export async function placeOrder(_: ActionState, form: FormData): Promise<Action
 
   if (data.paymentMethod === "MPESA") {
     await requestMpesaPayment(order.id);
+  } else {
+    const orderId = order.id;
+    after(() => notifyOrderConfirmed(orderId));
   }
   redirect(`/order/${order.token}?new=1`);
 }
@@ -147,6 +152,7 @@ async function requestMpesaPayment(orderId: string) {
       where: { id: order.id },
       data: { paymentStatus: "PAID", status: "CONFIRMED", mpesaReceipt: `SIM${randomBytes(4).toString("hex").toUpperCase()}` },
     });
+    after(() => notifyOrderConfirmed(order.id));
     return;
   }
   try {
