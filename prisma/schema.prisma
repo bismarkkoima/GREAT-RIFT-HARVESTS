@@ -1,0 +1,167 @@
+// Great Rift Harvests database schema.
+// SQLite is used for local development. To use PostgreSQL in production,
+// change `provider` to "postgresql" and point DATABASE_URL at your database.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  phone        String?
+  passwordHash String
+  role         String         @default("CUSTOMER") // CUSTOMER | ADMIN
+  createdAt    DateTime       @default(now())
+  orders       Order[]
+  reviews      Review[]
+  wishlist     WishlistItem[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String    @default("")
+  image       String    @default("")
+  sortOrder   Int       @default(0)
+  products    Product[]
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String
+  details     String           @default("")
+  image       String
+  gallery     String           @default("[]") // JSON array of image URLs
+  tags        String           @default("")
+  featured    Boolean          @default(false)
+  active      Boolean          @default(true)
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+  reviews     Review[]
+  wishlist    WishlistItem[]
+  orderItems  OrderItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id         String      @id @default(cuid())
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label      String // e.g. "Bundle (10 stems)"
+  stems      Int
+  price      Int // Kenyan shillings
+  stock      Int         @default(100)
+  sortOrder  Int         @default(0)
+  orderItems OrderItem[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  // Unguessable token used in confirmation/tracking links.
+  token           String      @unique @default(cuid())
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name            String
+  email           String
+  phone           String
+  address         String
+  city            String
+  deliveryDate    DateTime?
+  giftMessage     String?
+  notes           String?
+  subtotal        Int
+  deliveryFee     Int
+  discount        Int         @default(0)
+  total           Int
+  couponCode      String?
+  // PENDING | CONFIRMED | PROCESSING | OUT_FOR_DELIVERY | DELIVERED | CANCELLED
+  status          String      @default("PENDING")
+  paymentMethod   String // MPESA | CASH
+  // UNPAID | PENDING | PAID | FAILED
+  paymentStatus   String      @default("UNPAID")
+  mpesaCheckoutId String?     @unique
+  mpesaReceipt    String?
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id           String          @id @default(cuid())
+  orderId      String
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  name         String
+  variantLabel String
+  image        String
+  price        Int
+  quantity     Int
+}
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  percentOff  Int       @default(0)
+  amountOff   Int       @default(0)
+  minSubtotal Int       @default(0)
+  active      Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
