@@ -19,7 +19,7 @@ export default function AboutPage() {
             Every bunch is cut at dawn, conditioned by hand, and delivered within hours — no cold-storage warehouses, no middlemen.
           </p>
         </div>
-        <div className="relative aspect-[4/3] overflow-hidden rounded-3xl shadow-xl">
+        <div className="relative aspect-4/3 overflow-hidden rounded-3xl shadow-xl">
           <Image src="/images/sunshinebouqet.jpeg" alt="Freshly cut flowers" fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" />
         </div>
       </section>

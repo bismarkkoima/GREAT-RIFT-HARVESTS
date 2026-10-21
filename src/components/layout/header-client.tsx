@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/components/cart/cart-provider";
 import { CartIcon, CloseIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon } from "@/components/ui/icons";
@@ -32,12 +32,21 @@ export function NavLinks() {
   );
 }
 
+// The theme is the "dark" class on <html> (set before paint by the script in layout.tsx).
+function subscribeToTheme(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+
 function ThemeToggle() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => setDark(document.documentElement.classList.contains("dark")), []);
+  const dark = useSyncExternalStore(
+    subscribeToTheme,
+    () => document.documentElement.classList.contains("dark"),
+    () => false,
+  );
   const toggle = () => {
     const next = !dark;
-    setDark(next);
     document.documentElement.classList.toggle("dark", next);
     try {
       localStorage.setItem("theme", next ? "dark" : "light");
@@ -81,14 +90,12 @@ export function HeaderActions({ user }: { user: { name: string; isAdmin: boolean
 
 export function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  useEffect(() => setOpen(false), [pathname]);
   return (
     <>
       <button className="rounded-full p-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
         <MenuIcon />
       </button>
-      {/* Portal to <body>: the header's backdrop-blur would otherwise become the containing block for this fixed overlay. */}
+      {/* Portal to <body>: the header's backdrop-blur-sm would otherwise become the containing block for this fixed overlay. */}
       {open && createPortal(
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
@@ -97,7 +104,7 @@ export function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
               <CloseIcon />
             </button>
             {[...NAV, { href: "/account", label: "My Account" }, ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : [])].map((item) => (
-              <Link key={item.href} href={item.href} className="rounded-xl px-4 py-3 font-medium hover:bg-stone-100 dark:hover:bg-stone-800">
+              <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="rounded-xl px-4 py-3 font-medium hover:bg-stone-100 dark:hover:bg-stone-800">
                 {item.label}
               </Link>
             ))}

@@ -9,8 +9,8 @@ import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import { Toaster } from "@/components/ui/toaster";
 import { RegisterServiceWorker } from "@/components/layout/register-sw";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const display = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
+const sans = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const display = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 

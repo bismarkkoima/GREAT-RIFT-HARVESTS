@@ -33,10 +33,10 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="relative grid grid-cols-2 gap-4">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl shadow-xl">
+            <div className="relative aspect-3/4 overflow-hidden rounded-3xl shadow-xl">
               <Image src="/images/elegantbouquet.webp" alt="Elegant bouquet" fill priority sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" />
             </div>
-            <div className="relative mt-12 aspect-[3/4] overflow-hidden rounded-3xl shadow-xl">
+            <div className="relative mt-12 aspect-3/4 overflow-hidden rounded-3xl shadow-xl">
               <Image src="/images/classicrose.webp" alt="Classic roses" fill priority sizes="(min-width: 768px) 25vw, 50vw" className="object-cover" />
             </div>
           </div>
@@ -68,7 +68,7 @@ export default async function HomePage() {
           {categories.map((c) => (
             <Link key={c.id} href={`/shop?category=${c.slug}`} className="group relative aspect-square overflow-hidden rounded-3xl">
               <Image src={c.image || "/images/wildflowers.jfif"} alt={c.name} fill sizes="25vw" className="object-cover transition duration-500 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 text-white">
                 <p className="font-display text-xl font-semibold">{c.name}</p>
                 <p className="line-clamp-1 text-xs text-white/80">{c.description}</p>

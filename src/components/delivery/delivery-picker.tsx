@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { getDeliverySlots } from "@/app/actions/checkout";
 
 type Slot = { id: string; label: string; remaining: number; available: boolean; reason?: string };
@@ -21,25 +21,22 @@ export function DeliveryPicker({
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [slotId, setSlotId] = useState("");
   const [loading, startLoading] = useTransition();
+  const latestDate = useRef("");
 
-  useEffect(() => {
+  const chooseDate = (next: string) => {
+    setDate(next);
     setSlotId("");
-    if (!date) {
-      setSlots(null);
-      return;
-    }
-    let cancelled = false;
+    setSlots(null);
+    latestDate.current = next;
+    if (!next) return;
     startLoading(async () => {
-      const result = await getDeliverySlots(date);
-      if (cancelled) return;
+      const result = await getDeliverySlots(next);
+      if (latestDate.current !== next) return; // a newer date was picked meanwhile
       setSlots(result);
       const first = result.find((s) => s.available);
       if (first) setSlotId(first.id);
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [date]);
+  };
 
   const noneAvailable = slots && slots.length > 0 && !slots.some((s) => s.available);
 
@@ -55,7 +52,7 @@ export function DeliveryPicker({
           max={maxDate}
           required={required}
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => chooseDate(e.target.value)}
           className="input"
         />
         {!date && !required && <p className="mt-1 text-xs text-stone-500">Leave empty for delivery as soon as possible.</p>}

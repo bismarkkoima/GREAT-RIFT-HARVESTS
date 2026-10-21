@@ -57,7 +57,7 @@ export default async function AdminDashboard() {
           {days.map((d) => (
             <div key={d.key} className="group relative flex h-full flex-1 items-end">
               <div className="w-full rounded-t bg-brand-500 transition group-hover:bg-brand-700" style={{ height: `${(d.total / maxDay) * 100}%`, minHeight: d.total ? 4 : 1 }} />
-              <span className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-stone-900 px-2 py-0.5 text-xs text-white group-hover:block">
+              <span className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-sm bg-stone-900 px-2 py-0.5 text-xs text-white group-hover:block">
                 {formatKsh(d.total)}
               </span>
             </div>

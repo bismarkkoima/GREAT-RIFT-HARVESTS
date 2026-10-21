@@ -28,7 +28,7 @@ export function CartDrawer() {
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Shopping cart">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={close} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={close} />
       <aside className="absolute right-0 top-0 flex h-full w-full max-w-md animate-slide-in flex-col bg-white shadow-2xl dark:bg-stone-900">
         <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4 dark:border-stone-800">
           <h2 className="text-xl">Your cart</h2>

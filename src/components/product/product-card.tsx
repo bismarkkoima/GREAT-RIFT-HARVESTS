@@ -10,7 +10,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
   const first = product.variants[0];
   return (
     <div className="group card flex flex-col overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
-      <Link href={`/shop/${product.slug}`} className="relative block aspect-[4/5] overflow-hidden bg-stone-100 dark:bg-stone-800">
+      <Link href={`/shop/${product.slug}`} className="relative block aspect-4/5 overflow-hidden bg-stone-100 dark:bg-stone-800">
         <Image
           src={product.image}
           alt={product.name}
