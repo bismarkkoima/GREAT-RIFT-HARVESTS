@@ -1,15 +1,14 @@
 "use server";
 
-import { randomBytes } from "crypto";
 import { headers } from "next/headers";
-import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { couponDiscount, deliveryFeeFor } from "@/lib/pricing";
-import { mpesaConfigured, normalizePhone, stkPush } from "@/lib/mpesa";
-import { notifyOrderConfirmed } from "@/lib/order-notifications";
+import { couponDiscount } from "@/lib/pricing";
+import { normalizePhone } from "@/lib/mpesa";
+import { getSlotAvailability } from "@/lib/delivery";
+import { OrderError, cancelOrder, createOrder, customerCanCancel, startPayment } from "@/lib/orders";
 import { rateLimit } from "@/lib/rate-limit";
 import type { ActionState } from "./types";
 
@@ -24,15 +23,12 @@ const checkoutSchema = z.object({
   address: z.string().trim().min(5, "Please enter a delivery address.").max(300),
   city: z.string().trim().min(2, "Please choose a city."),
   deliveryDate: z.string().optional(),
+  deliverySlotId: z.string().optional(),
   giftMessage: z.string().trim().max(300).optional(),
   notes: z.string().trim().max(500).optional(),
   coupon: z.string().trim().toUpperCase().optional(),
   paymentMethod: z.enum(["MPESA", "CASH"]),
 });
-
-function newOrderNumber() {
-  return `GRH-${randomBytes(4).toString("hex").toUpperCase()}`;
-}
 
 export async function checkCoupon(code: string, subtotal: number) {
   const coupon = await db.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
@@ -41,6 +37,10 @@ export async function checkCoupon(code: string, subtotal: number) {
     return { error: coupon && subtotal < coupon.minSubtotal ? `Minimum order of Ksh ${coupon.minSubtotal} for this code.` : "That code isn't valid." };
   }
   return { discount, code: coupon.code };
+}
+
+export async function getDeliverySlots(dateKey: string) {
+  return getSlotAvailability(dateKey);
 }
 
 export async function placeOrder(_: ActionState, form: FormData): Promise<ActionState> {
@@ -59,115 +59,39 @@ export async function placeOrder(_: ActionState, form: FormData): Promise<Action
   const phone = normalizePhone(data.phone);
   if (!phone) return { error: "Please enter a valid Kenyan phone number, e.g. 0712 345 678." };
 
-  let deliveryDate: Date | null = null;
-  if (data.deliveryDate) {
-    deliveryDate = new Date(`${data.deliveryDate}T09:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (isNaN(deliveryDate.getTime()) || deliveryDate < today) return { error: "Please choose a delivery date from today onwards." };
-  }
-
-  // Prices always come from the database, never from the browser.
-  const variants = await db.productVariant.findMany({
-    where: { id: { in: items.data.map((i) => i.variantId) }, product: { active: true } },
-    include: { product: true },
-  });
-  const lines = items.data.map((i) => ({ ...i, variant: variants.find((v) => v.id === i.variantId) }));
-  const missing = lines.find((l) => !l.variant);
-  if (missing) return { error: "Some items in your cart are no longer available. Please review your cart." };
-  const short = lines.find((l) => l.variant!.stock < l.quantity);
-  if (short) return { error: `Only ${short.variant!.stock} left of ${short.variant!.product.name} — ${short.variant!.label}.` };
-
-  const subtotal = lines.reduce((n, l) => n + l.variant!.price * l.quantity, 0);
-  const coupon = data.coupon ? await db.coupon.findUnique({ where: { code: data.coupon } }) : null;
-  const discount = couponDiscount(coupon, subtotal);
-  const deliveryFee = deliveryFeeFor(data.city, subtotal);
-  const total = subtotal - discount + deliveryFee;
   const user = await getCurrentUser();
-
   let order;
   try {
-    order = await db.$transaction(async (tx) => {
-      for (const l of lines) {
-        const updated = await tx.productVariant.updateMany({
-          where: { id: l.variantId, stock: { gte: l.quantity } },
-          data: { stock: { decrement: l.quantity } },
-        });
-        if (updated.count === 0) throw new Error("OUT_OF_STOCK");
-      }
-      return tx.order.create({
-        data: {
-          orderNumber: newOrderNumber(),
-          userId: user?.id,
-          name: data.name,
-          email: data.email,
-          phone,
-          address: data.address,
-          city: data.city,
-          deliveryDate,
-          giftMessage: data.giftMessage || null,
-          notes: data.notes || null,
-          subtotal,
-          discount,
-          deliveryFee,
-          total,
-          couponCode: discount > 0 ? coupon!.code : null,
-          paymentMethod: data.paymentMethod,
-          status: data.paymentMethod === "CASH" ? "CONFIRMED" : "PENDING",
-          items: {
-            create: lines.map((l) => ({
-              productId: l.variant!.productId,
-              variantId: l.variantId,
-              name: l.variant!.product.name,
-              variantLabel: l.variant!.label,
-              image: l.variant!.product.image,
-              price: l.variant!.price,
-              quantity: l.quantity,
-            })),
-          },
-        },
-      });
+    order = await createOrder({
+      lines: items.data,
+      customer: { name: data.name, email: data.email, phone, address: data.address, city: data.city, giftMessage: data.giftMessage, notes: data.notes },
+      userId: user?.id,
+      deliveryDateKey: data.deliveryDate || null,
+      deliverySlotId: data.deliverySlotId || null,
+      enforceSlotRules: true,
+      paymentMethod: data.paymentMethod,
+      couponCode: data.coupon || null,
     });
   } catch (e) {
-    if (e instanceof Error && e.message === "OUT_OF_STOCK") {
-      return { error: "Sorry, an item just sold out. Please review your cart." };
-    }
+    if (e instanceof OrderError) return { error: e.message };
     throw e;
   }
 
-  if (data.paymentMethod === "MPESA") {
-    await requestMpesaPayment(order.id);
-  } else {
-    const orderId = order.id;
-    after(() => notifyOrderConfirmed(orderId));
-  }
+  await startPayment(order.id);
   redirect(`/order/${order.token}?new=1`);
-}
-
-async function requestMpesaPayment(orderId: string) {
-  const order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
-  if (!mpesaConfigured()) {
-    // Simulation mode: treat the payment as successful so the full flow can be demoed.
-    await db.order.update({
-      where: { id: order.id },
-      data: { paymentStatus: "PAID", status: "CONFIRMED", mpesaReceipt: `SIM${randomBytes(4).toString("hex").toUpperCase()}` },
-    });
-    after(() => notifyOrderConfirmed(order.id));
-    return;
-  }
-  try {
-    const checkoutId = await stkPush({ phone: order.phone, amount: order.total, reference: order.orderNumber });
-    await db.order.update({ where: { id: order.id }, data: { paymentStatus: "PENDING", mpesaCheckoutId: checkoutId } });
-  } catch (e) {
-    console.error("STK push failed", e);
-    await db.order.update({ where: { id: order.id }, data: { paymentStatus: "FAILED" } });
-  }
 }
 
 export async function retryPayment(token: string) {
   const order = await db.order.findUnique({ where: { token } });
   if (!order || order.paymentMethod !== "MPESA" || order.paymentStatus === "PAID" || order.status === "CANCELLED") return;
-  await requestMpesaPayment(order.id);
+  await startPayment(order.id);
+  redirect(`/order/${token}`);
+}
+
+// The order token in the URL is the customer's proof of ownership (same as viewing the order).
+export async function cancelMyOrder(token: string) {
+  const order = await db.order.findUnique({ where: { token } });
+  if (order && customerCanCancel(order)) await cancelOrder(order.id);
   redirect(`/order/${token}`);
 }
 

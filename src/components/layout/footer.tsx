@@ -22,6 +22,7 @@ export function Footer() {
             <li><Link href="/shop?category=bouquets" className="hover:text-white">Bouquets</Link></li>
             <li><Link href="/shop?category=roses" className="hover:text-white">Roses</Link></li>
             <li><Link href="/shop?category=wildflowers" className="hover:text-white">Wildflowers</Link></li>
+            <li><Link href="/subscriptions" className="hover:text-white">Flower subscriptions</Link></li>
           </ul>
         </div>
         <div>

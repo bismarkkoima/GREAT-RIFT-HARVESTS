@@ -14,7 +14,10 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-semibold">Orders</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-semibold">Orders</h1>
+        <a href={status ? `/api/admin/orders?status=${status}` : "/api/admin/orders"} className="btn-secondary">Export CSV</a>
+      </div>
       <div className="mb-4 flex flex-wrap gap-2">
         {["", ...ORDER_STATUSES].map((s) => (
           <Link key={s || "all"} href={s ? `/admin/orders?status=${s}` : "/admin/orders"} className={`btn px-3 py-1.5 text-xs ${status === s ? "bg-brand-700 text-white" : "btn-secondary"}`}>

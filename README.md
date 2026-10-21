@@ -11,7 +11,10 @@ Built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS** and **P
 - Shop with search, category filters, price filter and sorting
 - Product pages with sizes (10-stem bundle / 100-stem box), stock levels, reviews and related products
 - Slide-out cart drawer and cart page (saved in the browser)
-- Checkout with delivery date, gift message, delivery zones, free delivery over Ksh 5,000 and discount codes
+- Checkout with gift message, delivery zones, free delivery over Ksh 5,000 and discount codes
+- **Delivery time slots** (morning / afternoon / evening) with daily limits and same-day cut-offs in Kenya time
+- **Flower subscriptions**: weekly, fortnightly or monthly deliveries at 10% off; customers can pause, skip or cancel anytime
+- Customers can cancel an order themselves until it is being prepared
 - **M-Pesa STK Push** payments (Safaricom Daraja) or cash on delivery
 - Order confirmation page with live payment status and a delivery progress tracker
 - Order tracking by order number + email
@@ -22,7 +25,9 @@ Built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS** and **P
 
 **Admin dashboard** (`/admin`)
 - Revenue stats, 30-day revenue chart, best sellers and low-stock alerts
-- Orders: filter, search, update order/payment status (cancelling restocks items)
+- Orders: filter, search, update order/payment status (cancelling restocks items), export to CSV
+- Deliveries: day-by-day run sheet grouped by time slot (printable), and slot settings (times, daily limit, on/off)
+- Subscriptions: all subscribers, next deliveries, monthly recurring revenue, failed renewals, and a "create due orders now" button
 - Products: create, edit, hide/delete, image upload, sizes, prices and stock
 - Categories, coupons, customers (grant/revoke admin), contact messages and newsletter subscribers (CSV export)
 
@@ -53,6 +58,18 @@ With no Daraja keys set, checkout runs in **demo mode** and M-Pesa payments are 
 To take real payments, create an app at <https://developer.safaricom.co.ke>, then fill in the `MPESA_*` variables in `.env`.
 `NEXT_PUBLIC_SITE_URL` must be a public HTTPS URL so Safaricom can reach `/api/mpesa/callback`.
 
+## Delivery slots and subscriptions
+
+Delivery slots live in the admin under **Deliveries**. Each slot has a start and end hour (Kenya time) and a maximum number of orders per day. Customers can't book a slot that is full or that starts within 2 hours.
+
+Subscription orders are created **the day before each delivery** by a daily job, so the florists can prepare and M-Pesa prompts go out in time. Run it once a day:
+
+- **Vercel:** `vercel.json` already schedules it at 8am Kenya time; just set `CRON_SECRET`.
+- **Any other host:** call it from a cron job, e.g. `curl -H "Authorization: Bearer $CRON_SECRET" https://your-site/api/cron/subscriptions`.
+- Or press **Create due orders now** on the admin Subscriptions page.
+
+If a renewal fails (for example, the flowers are out of stock), the delivery is kept, the problem shows on the Subscriptions page, the shop team gets an email, and it is retried on the next run.
+
 ## Email and SMS
 
 With no keys set, emails and SMS are printed to the server log so you can see exactly what would be sent.
@@ -64,6 +81,8 @@ With no keys set, emails and SMS are printed to the server log so you can see ex
 | Event | Customer | Shop team |
 | --- | --- | --- |
 | Order confirmed (cash, or once M-Pesa payment lands) | Email + SMS | Email |
+| Subscription started | Email | — |
+| Subscription renewal failed | — | Email |
 | Status set to Processing / Delivered / Cancelled | Email | — |
 | Status set to Out for delivery | Email + SMS | — |
 | Contact form message | — | Email |

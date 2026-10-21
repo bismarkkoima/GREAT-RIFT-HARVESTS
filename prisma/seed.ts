@@ -156,6 +156,16 @@ async function main() {
     });
   }
 
+  if ((await db.deliverySlot.count()) === 0) {
+    await db.deliverySlot.createMany({
+      data: [
+        { label: "Morning", startHour: 8, endHour: 12, capacity: 20, sortOrder: 1 },
+        { label: "Afternoon", startHour: 12, endHour: 16, capacity: 20, sortOrder: 2 },
+        { label: "Evening", startHour: 16, endHour: 19, capacity: 15, sortOrder: 3 },
+      ],
+    });
+  }
+
   await db.coupon.upsert({
     where: { code: "KARIBU10" },
     update: {},

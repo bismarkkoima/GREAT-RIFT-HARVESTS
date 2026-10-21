@@ -11,7 +11,7 @@ import { NAV } from "./nav";
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="hidden items-center gap-1 md:flex">
+    <nav className="hidden items-center gap-1 lg:flex">
       {NAV.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
@@ -85,12 +85,12 @@ export function MobileMenu({ isAdmin }: { isAdmin: boolean }) {
   useEffect(() => setOpen(false), [pathname]);
   return (
     <>
-      <button className="rounded-full p-2 md:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+      <button className="rounded-full p-2 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
         <MenuIcon />
       </button>
       {/* Portal to <body>: the header's backdrop-blur would otherwise become the containing block for this fixed overlay. */}
       {open && createPortal(
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <nav className="absolute left-0 top-0 flex h-full w-72 flex-col gap-1 bg-white p-6 shadow-xl dark:bg-stone-900">
             <button className="mb-4 self-end p-2" onClick={() => setOpen(false)} aria-label="Close menu">

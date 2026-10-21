@@ -8,19 +8,17 @@ import { checkCoupon, placeOrder } from "@/app/actions/checkout";
 import { formatKsh } from "@/lib/format";
 import { deliveryFeeFor } from "@/lib/pricing";
 import { useFormAction } from "@/components/ui/use-form-action";
+import { DeliveryPicker } from "@/components/delivery/delivery-picker";
 
 type Props = {
   user: { name: string; email: string; phone: string } | null;
   cities: string[];
   simulated: boolean;
+  minDate: string;
+  maxDate: string;
 };
 
-function today() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-export function CheckoutForm({ user, cities, simulated }: Props) {
+export function CheckoutForm({ user, cities, simulated, minDate, maxDate }: Props) {
   const { items, subtotal, ready } = useCart();
   const [state, action, pending] = useFormAction(placeOrder);
   const [city, setCity] = useState(cities[0]);
@@ -100,10 +98,7 @@ export function CheckoutForm({ user, cities, simulated }: Props) {
                 <option value="Other">Other (Ksh 500)</option>
               </select>
             </div>
-            <div>
-              <label className="label" htmlFor="deliveryDate">Delivery date</label>
-              <input id="deliveryDate" name="deliveryDate" type="date" min={today()} className="input" />
-            </div>
+            <DeliveryPicker minDate={minDate} maxDate={maxDate} />
             <div className="sm:col-span-2">
               <label className="label" htmlFor="giftMessage">Gift message (optional)</label>
               <textarea id="giftMessage" name="giftMessage" rows={2} maxLength={300} placeholder="We'll handwrite this on a card 💌" className="input" />

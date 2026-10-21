@@ -4,7 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { formatDate, formatKsh, statusLabel } from "@/lib/format";
-import { retryPayment } from "@/app/actions/checkout";
+import { cancelMyOrder, retryPayment } from "@/app/actions/checkout";
+import { customerCanCancel } from "@/lib/orders";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { ClearCartOnMount, PaymentPoller } from "./order-client";
 
 export const metadata: Metadata = { title: "Your order", robots: { index: false } };
@@ -63,7 +65,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <dl className="space-y-2 text-sm">
             <div><dt className="text-stone-500">Recipient</dt><dd>{order.name} · {order.phone}</dd></div>
             <div><dt className="text-stone-500">Address</dt><dd>{order.address}, {order.city}</dd></div>
-            <div><dt className="text-stone-500">Date</dt><dd>{order.deliveryDate ? formatDate(order.deliveryDate) : "As soon as possible"}</dd></div>
+            <div><dt className="text-stone-500">Date</dt><dd>{order.deliveryDate ? formatDate(order.deliveryDate) : "As soon as possible"}{order.deliverySlotLabel && ` · ${order.deliverySlotLabel}`}</dd></div>
             {order.giftMessage && <div><dt className="text-stone-500">Gift message</dt><dd className="italic">&ldquo;{order.giftMessage}&rdquo;</dd></div>}
           </dl>
         </section>
@@ -98,6 +100,15 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <div className="flex justify-between pt-2 text-lg font-semibold"><dt>Total</dt><dd>{formatKsh(order.total)}</dd></div>
         </dl>
       </section>
+
+      {customerCanCancel(order) && (
+        <form action={cancelMyOrder.bind(null, order.token)} className="mt-6 text-center">
+          <ConfirmButton message="Cancel this order?" className="text-sm font-medium text-blush-600 hover:underline">
+            Cancel this order
+          </ConfirmButton>
+          <p className="mt-1 text-xs text-stone-500">You can cancel until our florists start preparing it.</p>
+        </form>
+      )}
 
       <p className="mt-8 text-center text-sm text-stone-500">
         Bookmark this page to track your order, or use <Link href="/track" className="text-brand-700 hover:underline dark:text-brand-400">order tracking</Link> with your order number and email.

@@ -45,7 +45,8 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
           <p><span className="text-stone-500">Phone:</span> <a href={`tel:+${order.phone}`} className="hover:underline">+{order.phone}</a></p>
           <p><span className="text-stone-500">Email:</span> <a href={`mailto:${order.email}`} className="hover:underline">{order.email}</a></p>
           <p><span className="text-stone-500">Address:</span> {order.address}, {order.city}</p>
-          <p><span className="text-stone-500">Delivery date:</span> {order.deliveryDate ? formatDate(order.deliveryDate) : "ASAP"}</p>
+          <p><span className="text-stone-500">Delivery:</span> {order.deliveryDate ? formatDate(order.deliveryDate) : "ASAP"}{order.deliverySlotLabel && ` · ${order.deliverySlotLabel}`}</p>
+          {order.subscriptionId && <p><span className="badge bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200">Subscription delivery</span></p>}
           {order.notes && <p><span className="text-stone-500">Notes:</span> {order.notes}</p>}
           {order.giftMessage && <p className="rounded-xl bg-blush-50 p-3 italic dark:bg-blush-700/20">💌 &ldquo;{order.giftMessage}&rdquo;</p>}
         </section>

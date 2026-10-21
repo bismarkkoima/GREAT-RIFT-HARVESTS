@@ -1,5 +1,5 @@
 import "server-only";
-import type { Order, OrderItem } from "@prisma/client";
+import type { Order, OrderItem, Subscription } from "@prisma/client";
 import { formatDate, formatKsh, statusLabel } from "./format";
 
 // HTML email templates. Every user-supplied value goes through esc().
@@ -57,7 +57,9 @@ function itemsText(order: FullOrder) {
 export function orderConfirmationEmail(order: FullOrder) {
   const link = `${site()}/order/${order.token}`;
   const first = esc(order.name.split(" ")[0]);
-  const when = order.deliveryDate ? formatDate(order.deliveryDate) : "as soon as possible";
+  const when = order.deliveryDate
+    ? `${formatDate(order.deliveryDate)}${order.deliverySlotLabel ? `, ${order.deliverySlotLabel}` : ""}`
+    : "as soon as possible";
   const payment =
     order.paymentMethod === "CASH"
       ? "Cash on delivery"
@@ -104,7 +106,7 @@ export function adminNewOrderEmail(order: FullOrder) {
     html: layout(
       `New order ${order.orderNumber}`,
       `<p style="font-size:14px;line-height:1.6">${esc(order.name)} · +${esc(order.phone)} · ${esc(order.email)}<br/>
-${esc(order.address)}, ${esc(order.city)} · ${order.deliveryDate ? formatDate(order.deliveryDate) : "ASAP"}<br/>
+${esc(order.address)}, ${esc(order.city)} · ${order.deliveryDate ? formatDate(order.deliveryDate) : "ASAP"}${order.deliverySlotLabel ? `, ${esc(order.deliverySlotLabel)}` : ""}<br/>
 Payment: ${order.paymentMethod === "CASH" ? "Cash on delivery" : `M-Pesa (${statusLabel(order.paymentStatus)})`}</p>
 ${order.giftMessage ? `<p style="font-style:italic">💌 “${esc(order.giftMessage)}”</p>` : ""}
 ${order.notes ? `<p><strong>Notes:</strong> ${esc(order.notes)}</p>` : ""}
@@ -139,5 +141,48 @@ ${button(link, "Choose a new password")}
 <p style="font-size:13px;color:#78716c">If you didn't ask for this, you can safely ignore this email.</p>`,
     ),
     text: `Hi ${name.split(" ")[0]},\n\nReset your password (link expires in 1 hour): ${link}\n\nIf you didn't ask for this, ignore this email.`,
+  };
+}
+
+const FREQUENCY_TEXT: Record<string, string> = { WEEKLY: "every week", FORTNIGHTLY: "every 2 weeks", MONTHLY: "every month" };
+
+export function subscriptionStartedEmail(
+  sub: Subscription & { product: { name: string }; variant: { label: string; price: number } },
+  firstDelivery: string,
+) {
+  const link = `${site()}/account/subscriptions`;
+  const each = Math.round(sub.variant.price * sub.quantity * (1 - sub.discountPercent / 100));
+  const what = `${sub.quantity} × ${esc(sub.product.name)} (${esc(sub.variant.label)})`;
+  return {
+    subject: "Your flower subscription is set up 🌷",
+    html: layout(
+      `Fresh flowers, ${FREQUENCY_TEXT[sub.frequency] ?? "regularly"}`,
+      `<p style="font-size:15px;line-height:1.6">Hi ${esc(sub.name.split(" ")[0])}, your subscription is active. Here's what to expect:</p>
+<table role="presentation" width="100%" style="font-size:14px;line-height:1.8" cellpadding="0" cellspacing="0">
+<tr><td style="color:#78716c">Flowers</td><td align="right">${what}</td></tr>
+<tr><td style="color:#78716c">How often</td><td align="right">${FREQUENCY_TEXT[sub.frequency]}</td></tr>
+<tr><td style="color:#78716c">First delivery</td><td align="right">${firstDelivery}</td></tr>
+<tr><td style="color:#78716c">Price per delivery</td><td align="right">${formatKsh(each)} + delivery (${sub.discountPercent}% subscriber discount)</td></tr>
+<tr><td style="color:#78716c">Payment</td><td align="right">${sub.paymentMethod === "CASH" ? "Cash on delivery" : "M-Pesa prompt the day before each delivery"}</td></tr>
+</table>
+<p style="font-size:14px;color:#57534e">You can pause, skip a delivery or cancel any time from your account.</p>
+${button(link, "Manage subscription")}`,
+    ),
+    text: `Your subscription is active: ${sub.quantity} x ${sub.product.name} (${sub.variant.label}) ${FREQUENCY_TEXT[sub.frequency]}, first delivery ${firstDelivery}. ${formatKsh(each)} per delivery plus delivery fee.\nManage it: ${link}`,
+  };
+}
+
+export function subscriptionRenewalFailedEmail(sub: Subscription, deliveryKey: string, reason: string) {
+  const link = `${site()}/admin/subscriptions`;
+  return {
+    subject: `Subscription delivery for ${sub.name} could not be created`,
+    html: layout(
+      "Subscription renewal failed",
+      `<p style="font-size:15px;line-height:1.6">The ${esc(deliveryKey)} delivery for <strong>${esc(sub.name)}</strong> (+${esc(sub.phone)}) couldn't be created:</p>
+<p style="background:#fdf3f4;border-radius:12px;padding:12px 16px">${esc(reason)}</p>
+<p style="font-size:14px;color:#57534e">It will be retried on the next run. Restock the item or contact the customer.</p>
+${button(link, "Open subscriptions")}`,
+    ),
+    text: `The ${deliveryKey} delivery for ${sub.name} (+${sub.phone}) couldn't be created: ${reason}. It will be retried on the next run. ${link}`,
   };
 }

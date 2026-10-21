@@ -12,17 +12,18 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  name         String
-  email        String         @unique
-  phone        String?
-  passwordHash String
-  role         String         @default("CUSTOMER") // CUSTOMER | ADMIN
-  createdAt    DateTime       @default(now())
-  orders       Order[]
-  reviews      Review[]
-  wishlist     WishlistItem[]
-  resetTokens  PasswordResetToken[]
+  id            String               @id @default(cuid())
+  name          String
+  email         String               @unique
+  phone         String?
+  passwordHash  String
+  role          String               @default("CUSTOMER") // CUSTOMER | ADMIN
+  createdAt     DateTime             @default(now())
+  orders        Order[]
+  reviews       Review[]
+  wishlist      WishlistItem[]
+  resetTokens   PasswordResetToken[]
+  subscriptions Subscription[]
 }
 
 model PasswordResetToken {
@@ -47,36 +48,38 @@ model Category {
 }
 
 model Product {
-  id          String           @id @default(cuid())
-  name        String
-  slug        String           @unique
-  description String
-  details     String           @default("")
-  image       String
-  gallery     String           @default("[]") // JSON array of image URLs
-  tags        String           @default("")
-  featured    Boolean          @default(false)
-  active      Boolean          @default(true)
-  categoryId  String
-  category    Category         @relation(fields: [categoryId], references: [id])
-  variants    ProductVariant[]
-  reviews     Review[]
-  wishlist    WishlistItem[]
-  orderItems  OrderItem[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id            String           @id @default(cuid())
+  name          String
+  slug          String           @unique
+  description   String
+  details       String           @default("")
+  image         String
+  gallery       String           @default("[]") // JSON array of image URLs
+  tags          String           @default("")
+  featured      Boolean          @default(false)
+  active        Boolean          @default(true)
+  categoryId    String
+  category      Category         @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  reviews       Review[]
+  wishlist      WishlistItem[]
+  orderItems    OrderItem[]
+  subscriptions Subscription[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
 model ProductVariant {
-  id         String      @id @default(cuid())
-  productId  String
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  label      String // e.g. "Bundle (10 stems)"
-  stems      Int
-  price      Int // Kenyan shillings
-  stock      Int         @default(100)
-  sortOrder  Int         @default(0)
-  orderItems OrderItem[]
+  id            String         @id @default(cuid())
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label         String // e.g. "Bundle (10 stems)"
+  stems         Int
+  price         Int // Kenyan shillings
+  stock         Int            @default(100)
+  sortOrder     Int            @default(0)
+  orderItems    OrderItem[]
+  subscriptions Subscription[]
 }
 
 model Review {
@@ -104,35 +107,41 @@ model WishlistItem {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
   // Unguessable token used in confirmation/tracking links.
-  token           String      @unique @default(cuid())
-  userId          String?
-  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name            String
-  email           String
-  phone           String
-  address         String
-  city            String
-  deliveryDate    DateTime?
-  giftMessage     String?
-  notes           String?
-  subtotal        Int
-  deliveryFee     Int
-  discount        Int         @default(0)
-  total           Int
-  couponCode      String?
+  token             String        @unique @default(cuid())
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name              String
+  email             String
+  phone             String
+  address           String
+  city              String
+  deliveryDate      DateTime?
+  deliverySlotId    String?
+  deliverySlot      DeliverySlot? @relation(fields: [deliverySlotId], references: [id], onDelete: SetNull)
+  // Snapshot of the slot label, e.g. "Morning (8am – 12pm)", kept if the slot is later edited.
+  deliverySlotLabel String?
+  subscriptionId    String?
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  giftMessage       String?
+  notes             String?
+  subtotal          Int
+  deliveryFee       Int
+  discount          Int           @default(0)
+  total             Int
+  couponCode        String?
   // PENDING | CONFIRMED | PROCESSING | OUT_FOR_DELIVERY | DELIVERED | CANCELLED
-  status          String      @default("PENDING")
-  paymentMethod   String // MPESA | CASH
+  status            String        @default("PENDING")
+  paymentMethod     String // MPESA | CASH
   // UNPAID | PENDING | PAID | FAILED
-  paymentStatus   String      @default("UNPAID")
-  mpesaCheckoutId String?     @unique
-  mpesaReceipt    String?
-  items           OrderItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  paymentStatus     String        @default("UNPAID")
+  mpesaCheckoutId   String?       @unique
+  mpesaReceipt      String?
+  items             OrderItem[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model OrderItem {
@@ -176,4 +185,44 @@ model NewsletterSubscriber {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+// Delivery windows customers can choose at checkout. Hours are Kenya time (EAT).
+model DeliverySlot {
+  id            String         @id @default(cuid())
+  label         String
+  startHour     Int
+  endHour       Int
+  capacity      Int            @default(20) // max orders per slot per day
+  active        Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  orders        Order[]
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id])
+  variantId        String
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  quantity         Int            @default(1)
+  frequency        String // WEEKLY | FORTNIGHTLY | MONTHLY
+  discountPercent  Int            @default(10)
+  nextDeliveryDate DateTime
+  deliverySlotId   String?
+  deliverySlot     DeliverySlot?  @relation(fields: [deliverySlotId], references: [id], onDelete: SetNull)
+  name             String
+  phone            String
+  address          String
+  city             String
+  giftMessage      String?
+  paymentMethod    String // MPESA | CASH
+  status           String         @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
+  lastError        String?
+  orders           Order[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }

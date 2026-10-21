@@ -3,7 +3,11 @@ export function formatKsh(amount: number) {
 }
 
 export function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(date).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Nairobi" });
+}
+
+export function formatDayLong(date: Date | string) {
+  return new Date(date).toLocaleDateString("en-KE", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Nairobi" });
 }
 
 export function slugify(text: string) {

@@ -210,3 +210,27 @@ export async function setUserRole(id: string, role: "ADMIN" | "CUSTOMER") {
   await db.user.update({ where: { id }, data: { role } });
   revalidatePath("/admin/customers");
 }
+
+const slotSchema = z
+  .object({
+    label: z.string().trim().min(2, "Give the slot a name.").max(40),
+    startHour: z.coerce.number().int().min(0).max(23),
+    endHour: z.coerce.number().int().min(1).max(24),
+    capacity: z.coerce.number().int().min(0).max(1000),
+  })
+  .refine((s) => s.endHour > s.startHour, "The end time must be after the start time.");
+
+export async function saveDeliverySlot(_: ActionState, form: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const parsed = slotSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const id = String(form.get("id") ?? "");
+  const data = { ...parsed.data, active: form.get("active") === "on" };
+  if (id) {
+    await db.deliverySlot.update({ where: { id }, data });
+  } else {
+    await db.deliverySlot.create({ data: { ...data, sortOrder: (await db.deliverySlot.count()) + 1 } });
+  }
+  revalidatePath("/admin/deliveries");
+  return { ok: true, message: id ? "Slot updated." : "Slot added." };
+}
