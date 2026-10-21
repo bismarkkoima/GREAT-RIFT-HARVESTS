@@ -2,7 +2,8 @@ import "server-only";
 import { randomBytes } from "crypto";
 import { after } from "next/server";
 import { db } from "./db";
-import { couponDiscount, deliveryFeeFor } from "./pricing";
+import { deliveryFeeFor } from "./pricing";
+import { evaluateCoupon } from "./coupons";
 import { checkSlot, dateKeyToDeliveryDate, isDateKey, nairobiNow, slotLabel } from "./delivery";
 import { mpesaConfigured, stkPush } from "./mpesa";
 import { notifyOrderConfirmed, notifyOrderStatus } from "./order-notifications";
@@ -62,14 +63,22 @@ export async function createOrder(input: NewOrder) {
   if (short) throw new OrderError(`Only ${short.variant!.stock} left of ${short.variant!.product.name} — ${short.variant!.label}.`);
 
   const subtotal = lines.reduce((n, l) => n + l.variant!.price * l.quantity, 0);
-  const coupon = input.couponCode ? await db.coupon.findUnique({ where: { code: input.couponCode } }) : null;
-  const couponOff = couponDiscount(coupon, subtotal);
   const percentOff = Math.round((subtotal * (input.percentOff ?? 0)) / 100);
-  const discount = Math.min(subtotal, couponOff + percentOff);
   const deliveryFee = deliveryFeeFor(input.customer.city, subtotal);
-  const total = subtotal - discount + deliveryFee;
 
   return db.$transaction(async (tx) => {
+    // Coupon rules are checked inside the transaction so usage limits can't be exceeded by concurrent orders.
+    let couponOff = 0;
+    let couponCode: string | null = null;
+    if (input.couponCode) {
+      const check = await evaluateCoupon(input.couponCode, subtotal, { email: input.customer.email, userId: input.userId }, tx);
+      if (!check.ok) throw new OrderError(`Discount code: ${check.error}`);
+      couponOff = check.discount;
+      couponCode = check.coupon.code;
+    }
+    const discount = Math.min(subtotal, couponOff + percentOff);
+    const total = subtotal - discount + deliveryFee;
+
     for (const l of lines) {
       const updated = await tx.productVariant.updateMany({
         where: { id: l.variantId, stock: { gte: l.quantity } },
@@ -91,7 +100,7 @@ export async function createOrder(input: NewOrder) {
         discount,
         deliveryFee,
         total,
-        couponCode: couponOff > 0 ? coupon!.code : null,
+        couponCode,
         paymentMethod: input.paymentMethod,
         status: input.paymentMethod === "CASH" ? "CONFIRMED" : "PENDING",
         subscriptionId: input.subscriptionId ?? null,
@@ -129,7 +138,7 @@ export async function startPayment(orderId: string) {
   }
   try {
     const checkoutId = await stkPush({ phone: order.phone, amount: order.total, reference: order.orderNumber });
-    await db.order.update({ where: { id: order.id }, data: { paymentStatus: "PENDING", mpesaCheckoutId: checkoutId } });
+    await db.order.update({ where: { id: order.id }, data: { paymentStatus: "PENDING", mpesaCheckoutId: checkoutId, mpesaRequestedAt: new Date(), mpesaCheckedAt: null } });
   } catch (e) {
     console.error("STK push failed", e);
     await db.order.update({ where: { id: order.id }, data: { paymentStatus: "FAILED" } });

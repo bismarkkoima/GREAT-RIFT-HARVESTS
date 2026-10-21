@@ -139,6 +139,9 @@ model Order {
   paymentStatus     String        @default("UNPAID")
   mpesaCheckoutId   String?       @unique
   mpesaReceipt      String?
+  // When the latest STK push was sent, and when we last asked Safaricom about it.
+  mpesaRequestedAt  DateTime?
+  mpesaCheckedAt    DateTime?
   items             OrderItem[]
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -160,14 +163,17 @@ model OrderItem {
 }
 
 model Coupon {
-  id          String    @id @default(cuid())
-  code        String    @unique
-  percentOff  Int       @default(0)
-  amountOff   Int       @default(0)
-  minSubtotal Int       @default(0)
-  active      Boolean   @default(true)
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  code           String    @unique
+  percentOff     Int       @default(0)
+  amountOff      Int       @default(0)
+  minSubtotal    Int       @default(0)
+  maxUses        Int? // total redemptions allowed (null = unlimited)
+  perCustomer    Int? // redemptions per customer email (null = unlimited)
+  firstOrderOnly Boolean   @default(false) // only for customers without an earlier order
+  active         Boolean   @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
 }
 
 model ContactMessage {

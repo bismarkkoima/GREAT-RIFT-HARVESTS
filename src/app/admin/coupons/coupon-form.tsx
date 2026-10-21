@@ -13,6 +13,11 @@ export function CouponForm() {
         <div><label className="label" htmlFor="amountOff">Ksh off</label><input id="amountOff" name="amountOff" type="number" min={0} defaultValue={0} className="input" /></div>
       </div>
       <div><label className="label" htmlFor="minSubtotal">Minimum order (Ksh)</label><input id="minSubtotal" name="minSubtotal" type="number" min={0} defaultValue={0} className="input" /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="label" htmlFor="maxUses">Total uses</label><input id="maxUses" name="maxUses" type="number" min={1} placeholder="Unlimited" className="input" /></div>
+        <div><label className="label" htmlFor="perCustomer">Per customer</label><input id="perCustomer" name="perCustomer" type="number" min={1} placeholder="Unlimited" className="input" /></div>
+      </div>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="firstOrderOnly" className="h-4 w-4 accent-brand-700" /> First order only (new customers)</label>
       <div><label className="label" htmlFor="expiresAt">Expires (optional)</label><input id="expiresAt" name="expiresAt" type="date" className="input" /></div>
       {state?.error && <p className="text-sm text-blush-600">{state.error}</p>}
       {state?.ok && <p className="text-sm text-brand-700">{state.message}</p>}

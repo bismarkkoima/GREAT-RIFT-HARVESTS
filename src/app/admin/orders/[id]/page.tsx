@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ORDER_STATUSES, formatDate, formatKsh, statusLabel } from "@/lib/format";
-import { updateOrder } from "@/app/actions/admin";
+import { checkMpesaPayment, updateOrder } from "@/app/actions/admin";
+import { mpesaConfigured } from "@/lib/mpesa";
 
 export default async function AdminOrder({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -55,6 +56,11 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
           <p><span className="text-stone-500">Method:</span> {order.paymentMethod === "MPESA" ? "M-Pesa" : "Cash on delivery"}</p>
           <p><span className="text-stone-500">Status:</span> {statusLabel(order.paymentStatus)}</p>
           {order.mpesaReceipt && <p><span className="text-stone-500">Receipt:</span> <span className="font-mono">{order.mpesaReceipt}</span></p>}
+          {order.paymentMethod === "MPESA" && order.paymentStatus === "PENDING" && order.mpesaCheckoutId && mpesaConfigured() && (
+            <form action={checkMpesaPayment.bind(null, order.id)}>
+              <button className="btn-secondary px-3 py-1.5 text-xs">Check M-Pesa status now</button>
+            </form>
+          )}
           <dl className="mt-4 space-y-1 border-t border-stone-200 pt-3 dark:border-stone-800">
             <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatKsh(order.subtotal)}</dd></div>
             {order.discount > 0 && <div className="flex justify-between"><dt>Discount ({order.couponCode})</dt><dd>−{formatKsh(order.discount)}</dd></div>}

@@ -1,0 +1,39 @@
+name: Website checks
+
+# Lints, type-checks and builds the website on every push, so a broken change is caught before deploying.
+
+on:
+  push:
+    paths-ignore:
+      - "mobile/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: "file:./ci.db"
+      AUTH_SECRET: "ci-only-secret-not-used-in-production"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Database schema and seed
+        run: npx prisma db push && npm run db:seed

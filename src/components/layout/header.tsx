@@ -7,7 +7,7 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-sand-50/80 backdrop-blur-lg dark:border-stone-800/70 dark:bg-stone-950/80">
       <div className="bg-brand-800 py-1.5 text-center text-xs font-medium text-brand-50">
-        Free delivery on orders over Ksh 5,000 · Use code <span className="font-bold">KARIBU10</span> for 10% off
+        Free delivery on orders over Ksh 5,000 · New here? Use <span className="font-bold">KARIBU10</span> for 10% off your first order
       </div>
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-2">

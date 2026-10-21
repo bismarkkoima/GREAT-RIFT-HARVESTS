@@ -1,6 +1,6 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { notifyOrderConfirmed } from "@/lib/order-notifications";
+import { markMpesaFailed, markMpesaPaid } from "@/lib/payments";
 
 type CallbackItem = { Name: string; Value?: string | number };
 type Callback = {
@@ -21,25 +21,22 @@ export async function POST(req: Request) {
   if (!cb?.CheckoutRequestID) return NextResponse.json({ ResultCode: 1, ResultDesc: "Invalid payload" }, { status: 400 });
 
   const order = await db.order.findUnique({ where: { mpesaCheckoutId: cb.CheckoutRequestID } });
-  // Safaricom may retry callbacks; only act on orders still awaiting payment.
-  if (!order || order.paymentStatus === "PAID") return NextResponse.json({ ResultCode: 0, ResultDesc: "Ignored" });
+  if (!order) return NextResponse.json({ ResultCode: 0, ResultDesc: "Ignored" });
 
   if (cb.ResultCode === 0) {
     const items = cb.CallbackMetadata?.Item ?? [];
-    const receipt = items.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
+    const receiptValue = items.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
+    const receipt = receiptValue ? String(receiptValue) : null;
     const amount = Number(items.find((i) => i.Name === "Amount")?.Value ?? 0);
     if (amount < order.total) {
       console.warn(`M-Pesa amount mismatch for ${order.orderNumber}: got ${amount}, expected ${order.total}`);
-      await db.order.update({ where: { id: order.id }, data: { paymentStatus: "FAILED" } });
-    } else {
-      await db.order.update({
-        where: { id: order.id },
-        data: { paymentStatus: "PAID", status: order.status === "PENDING" ? "CONFIRMED" : order.status, mpesaReceipt: receipt ? String(receipt) : null },
-      });
-      after(() => notifyOrderConfirmed(order.id));
+      await markMpesaFailed(order.id);
+    } else if (!(await markMpesaPaid(order.id, receipt)) && receipt && !order.mpesaReceipt) {
+      // Already marked paid by a status check (which has no receipt number); record it now.
+      await db.order.update({ where: { id: order.id }, data: { mpesaReceipt: receipt } });
     }
   } else {
-    await db.order.update({ where: { id: order.id }, data: { paymentStatus: "FAILED" } });
+    await markMpesaFailed(order.id);
   }
   return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
 }

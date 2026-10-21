@@ -168,8 +168,9 @@ async function main() {
 
   await db.coupon.upsert({
     where: { code: "KARIBU10" },
-    update: {},
-    create: { code: "KARIBU10", percentOff: 10, minSubtotal: 1000 },
+    update: { firstOrderOnly: true, perCustomer: 1 },
+    // Welcome code: 10% off a first order.
+    create: { code: "KARIBU10", percentOff: 10, minSubtotal: 1000, firstOrderOnly: true, perCustomer: 1 },
   });
 
   console.log(`Seeded. Admin login: ${adminEmail} / ${process.env.ADMIN_PASSWORD ? "(from ADMIN_PASSWORD)" : adminPassword}`);

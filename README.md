@@ -29,8 +29,9 @@ Built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS** and **P
 - Orders: filter, search, update order/payment status (cancelling restocks items), export to CSV
 - Deliveries: day-by-day run sheet grouped by time slot (printable), and slot settings (times, daily limit, on/off)
 - Subscriptions: all subscribers, next deliveries, monthly recurring revenue, failed renewals, and a "create due orders now" button
+- Coupons: percentage or fixed amount, minimum order, expiry, total-use and per-customer limits, first-order-only codes
 - Products: create, edit, hide/delete, image upload, sizes, prices and stock
-- Categories, coupons, customers (grant/revoke admin), contact messages and newsletter subscribers (CSV export)
+- Categories, customers (grant/revoke admin), contact messages and newsletter subscribers (CSV export)
 
 **Security**
 - Passwords hashed with bcrypt; signed, HTTP-only session cookies
@@ -51,13 +52,20 @@ npm run dev                 # http://localhost:3000
 Admin sign-in after seeding uses `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`
 (defaults: `admin@greatriftharvests.co.ke` / `ChangeMe123!`, so **change these before going live**).
 
-Try the discount code `KARIBU10` for 10% off.
+Try the discount code `KARIBU10` for 10% off a first order.
 
 ## M-Pesa
 
 With no Daraja keys set, checkout runs in **demo mode** and M-Pesa payments are marked as paid automatically.
 To take real payments, create an app at <https://developer.safaricom.co.ke>, then fill in the `MPESA_*` variables in `.env`.
 `NEXT_PUBLIC_SITE_URL` must be a public HTTPS URL so Safaricom can reach `/api/mpesa/callback`.
+
+If Safaricom's callback is slow or never arrives, the store asks Safaricom for the payment status itself:
+- while the customer is on the order page (after 30 seconds, at most every 15 seconds);
+- from the admin order page (**Check M-Pesa status now**);
+- from a background sweep, `GET /api/cron/payments` with `Authorization: Bearer $CRON_SECRET`. Run it every 5–10 minutes where your host allows (Vercel's free plan only allows daily jobs, so `vercel.json` runs it once a day as a safety net).
+
+A prompt nobody answers is marked failed after 15 minutes, and the customer can retry. A late "paid" callback still marks the order paid.
 
 ## Delivery slots and subscriptions
 

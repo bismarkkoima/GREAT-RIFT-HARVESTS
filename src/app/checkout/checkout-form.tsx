@@ -46,7 +46,8 @@ export function CheckoutForm({ user, cities, simulated, minDate, maxDate }: Prop
   const applyCoupon = () =>
     startCheck(async () => {
       setCouponError("");
-      const res = await checkCoupon(couponInput, subtotal);
+      const email = (document.getElementById("email") as HTMLInputElement | null)?.value;
+      const res = await checkCoupon(couponInput, subtotal, email);
       if ("error" in res && res.error) {
         setCoupon(null);
         setCouponError(res.error);

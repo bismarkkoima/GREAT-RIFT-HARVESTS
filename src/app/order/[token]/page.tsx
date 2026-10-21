@@ -34,13 +34,13 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <h1 className="mt-4 text-3xl font-semibold sm:text-4xl">
           {isNew ? `Thank you, ${order.name.split(" ")[0]}!` : `Order ${order.orderNumber}`}
         </h1>
-        <p className="mt-2 text-stone-500">
-          {awaitingPayment
-            ? "Check your phone and enter your M-Pesa PIN to complete payment. This page updates automatically."
-            : paymentFailed
-              ? "Your M-Pesa payment didn't go through."
-              : `Order ${order.orderNumber} · placed ${formatDate(order.createdAt)}`}
-        </p>
+        <p className="mt-2 text-stone-500">Order {order.orderNumber} · placed {formatDate(order.createdAt)}</p>
+        {awaitingPayment && (
+          <p className="mx-auto mt-4 max-w-md rounded-2xl bg-amber-50 p-4 text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+            📱 Check your phone and enter your M-Pesa PIN to complete payment. This page updates automatically.
+          </p>
+        )}
+        {paymentFailed && <p className="mt-4 font-medium text-blush-600">Your M-Pesa payment didn&apos;t go through.</p>}
         {paymentFailed && (
           <form action={retryPayment.bind(null, order.token)} className="mt-4">
             <button className="btn-primary">Retry M-Pesa payment</button>

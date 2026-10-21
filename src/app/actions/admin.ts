@@ -10,6 +10,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { notifyOrderStatus } from "@/lib/order-notifications";
+import { reconcileMpesaPayment } from "@/lib/payments";
 import { ORDER_STATUSES, slugify } from "@/lib/format";
 import type { ActionState } from "./types";
 
@@ -174,8 +175,17 @@ const couponSchema = z.object({
   percentOff: z.coerce.number().int().min(0).max(100),
   amountOff: z.coerce.number().int().min(0),
   minSubtotal: z.coerce.number().int().min(0),
+  maxUses: z.string().optional(),
+  perCustomer: z.string().optional(),
   expiresAt: z.string().optional(),
 });
+
+// Empty means unlimited; otherwise a whole number of at least 1.
+function optionalLimit(value: string | undefined, label: string) {
+  if (!value?.trim()) return { value: null };
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 ? { value: n } : { error: `${label} must be a whole number of 1 or more, or empty.` };
+}
 
 export async function createCoupon(_: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();
@@ -183,9 +193,22 @@ export async function createCoupon(_: ActionState, form: FormData): Promise<Acti
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const c = parsed.data;
   if (c.percentOff === 0 && c.amountOff === 0) return { error: "Set a percentage or a fixed amount off." };
+  const maxUses = optionalLimit(c.maxUses, "Total uses");
+  const perCustomer = optionalLimit(c.perCustomer, "Uses per customer");
+  if ("error" in maxUses) return { error: maxUses.error };
+  if ("error" in perCustomer) return { error: perCustomer.error };
   if (await db.coupon.findUnique({ where: { code: c.code } })) return { error: "That code already exists." };
   await db.coupon.create({
-    data: { code: c.code, percentOff: c.percentOff, amountOff: c.amountOff, minSubtotal: c.minSubtotal, expiresAt: c.expiresAt ? new Date(`${c.expiresAt}T23:59:59`) : null },
+    data: {
+      code: c.code,
+      percentOff: c.percentOff,
+      amountOff: c.amountOff,
+      minSubtotal: c.minSubtotal,
+      maxUses: maxUses.value,
+      perCustomer: perCustomer.value,
+      firstOrderOnly: form.get("firstOrderOnly") === "on",
+      expiresAt: c.expiresAt ? new Date(`${c.expiresAt}T23:59:59+03:00`) : null,
+    },
   });
   revalidatePath("/admin/coupons");
   return { ok: true, message: `Coupon ${c.code} created.` };
@@ -233,4 +256,10 @@ export async function saveDeliverySlot(_: ActionState, form: FormData): Promise<
   }
   revalidatePath("/admin/deliveries");
   return { ok: true, message: id ? "Slot updated." : "Slot added." };
+}
+
+export async function checkMpesaPayment(id: string) {
+  await requireAdmin();
+  await reconcileMpesaPayment(id, { force: true });
+  revalidatePath(`/admin/orders/${id}`);
 }

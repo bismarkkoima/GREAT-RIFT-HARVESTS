@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { couponDiscount } from "@/lib/pricing";
+import { evaluateCoupon } from "@/lib/coupons";
 import { normalizePhone } from "@/lib/mpesa";
 import { getSlotAvailability } from "@/lib/delivery";
 import { OrderError, cancelOrder, createOrder, customerCanCancel, startPayment } from "@/lib/orders";
@@ -30,13 +30,13 @@ const checkoutSchema = z.object({
   paymentMethod: z.enum(["MPESA", "CASH"]),
 });
 
-export async function checkCoupon(code: string, subtotal: number) {
-  const coupon = await db.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
-  const discount = couponDiscount(coupon, subtotal);
-  if (!coupon || discount === 0) {
-    return { error: coupon && subtotal < coupon.minSubtotal ? `Minimum order of Ksh ${coupon.minSubtotal} for this code.` : "That code isn't valid." };
-  }
-  return { discount, code: coupon.code };
+export async function checkCoupon(code: string, subtotal: number, email?: string) {
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0] ?? "local";
+  if (!rateLimit(`coupon:${ip}`, 20)) return { error: "Too many attempts. Please wait a minute." };
+  const user = await getCurrentUser();
+  const check = await evaluateCoupon(code, subtotal, { email: email || user?.email, userId: user?.id });
+  if (!check.ok) return { error: check.error };
+  return { discount: check.discount, code: check.coupon.code };
 }
 
 export async function getDeliverySlots(dateKey: string) {
