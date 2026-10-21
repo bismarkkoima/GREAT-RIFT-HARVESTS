@@ -34,7 +34,8 @@ export async function createSession(userId: string) {
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // HTTPS-only in production, unless the site is deliberately served over http (e.g. testing the app on a local network).
+    secure: process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_SITE_URL?.startsWith("http://"),
     path: "/",
     maxAge: MAX_AGE,
   });

@@ -1,0 +1,67 @@
+name: Android APK
+
+# Builds an installable test APK of the Great Rift Harvests app.
+# - Runs automatically when the app (mobile/) changes.
+# - Or run it by hand: Actions → Android APK → Run workflow, optionally with the store address.
+# Download the APK from the run's "Artifacts" section.
+
+on:
+  push:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: "Store address the app opens (e.g. https://greatriftharvests.co.ke). Leave empty for a setup screen."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      # Manual input wins; otherwise the repository variable APP_URL (Settings → Variables), if set.
+      APP_URL: ${{ inputs.app_url || vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+
+      - name: Sync web assets and config into the Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/great-rift-harvests-${GITHUB_SHA::7}.apk"
+          if [ -n "$APP_URL" ]; then echo "Opens: $APP_URL" > out/README.txt; else echo "Opens: setup screen (enter the store address on first launch)" > out/README.txt; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-rift-harvests-apk
+          path: mobile/out/
+          retention-days: 30

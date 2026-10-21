@@ -22,6 +22,7 @@ Built with **Next.js 15 (App Router)**, **TypeScript**, **Tailwind CSS** and **P
 - **Email and SMS notifications**: order confirmation, out-for-delivery, delivered and cancelled updates for customers; new-order and contact-form alerts for the shop team
 - Contact form, newsletter sign-up, WhatsApp chat button
 - Dark mode, fully responsive, SEO metadata, sitemap, robots.txt and product structured data
+- Installable on phones (web app manifest, app icon, offline page) and an **Android app** (see below)
 
 **Admin dashboard** (`/admin`)
 - Revenue stats, 30-day revenue chart, best sellers and low-stock alerts
@@ -87,6 +88,28 @@ With no keys set, emails and SMS are printed to the server log so you can see ex
 | Status set to Out for delivery | Email + SMS | — |
 | Contact form message | — | Email |
 | Forgot password | Email with a 1-hour reset link | — |
+
+## Android app
+
+`mobile/` holds an Android app (built with [Capacitor](https://capacitorjs.com)) that opens the store full-screen with its own icon and splash screen. It shows the live website, so every website update appears in the app without reinstalling.
+
+**Get the APK (no Android Studio needed):** every push that changes `mobile/` builds a test APK on GitHub. Open the repository on GitHub → **Actions** → **Android APK** → the latest run → **Artifacts** → `great-rift-harvests-apk`. Unzip it, copy the `.apk` to an Android phone and open it (allow "install unknown apps" when asked).
+
+**Which address the app opens:**
+- **Built in:** run the workflow by hand (Actions → Android APK → Run workflow) and enter the store address, or set a repository variable `APP_URL` (Settings → Secrets and variables → Actions → Variables).
+- **Not set:** the app shows a setup screen on first launch where you type the address. It remembers it; if the store can't be reached, the error screen lets you change it.
+
+**Testing against your computer:** run `npm run dev -- -H 0.0.0.0`, find the computer's Wi-Fi address (e.g. `192.168.1.20`), put the phone on the same Wi-Fi and enter `http://192.168.1.20:3000` in the app. Plain `http://` only works in these test builds.
+
+**Building on your own machine:** install Android Studio, then:
+
+```bash
+cd mobile
+npm install
+APP_URL=https://your-store.example npm run apk   # APK lands in android/app/build/outputs/apk/debug/
+```
+
+To change the app icon or splash screen, edit `brand/leaf.svg`, run `node brand/make-icons.mjs`, then `cd mobile && npm run assets`. Publishing on Google Play needs a signed release build (`./gradlew bundleRelease` with your own upload key) instead of the test APK.
 
 ## Scripts
 
